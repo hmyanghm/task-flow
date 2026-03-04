@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx prisma db push)",
+      "Bash(ssh -f -N -L 3307:claude.cd4coiukc9v8.ap-northeast-2.rds.amazonaws.com:3306 -i ~/yhm/claude/yhm-claude.pem ec2-user@ec2-43-201-16-235.ap-northeast-2.compute.amazonaws.com -o StrictHostKeyChecking=no)",
+      "Bash(chmod 400 /Users/yhm/claude/yhm-claude.pem)",
+      "Bash(ssh -f -N -L 3307:claude.cd4coiukc9v8.ap-northeast-2.rds.amazonaws.com:3306 -i /Users/yhm/claude/yhm-claude.pem ec2-user@ec2-43-201-16-235.ap-northeast-2.compute.amazonaws.com -o StrictHostKeyChecking=no)",
+      "Bash(npx prisma db seed)",
+      "Bash(npx tsx -e \":*)",
+      "Bash(node -e \":*)",
+      "Bash(npx shadcn@latest add checkbox -y)",
+      "Bash(npm run build)",
+      "Bash(ssh -i /Users/yhm/claude/yhm-claude.pem ec2-user@ec2-43-201-16-235.ap-northeast-2.compute.amazonaws.com \"curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash - && sudo yum install -y nodejs && sudo npm install -g pm2 && node --version && pm2 --version\")",
+      "Bash(rsync -avz --exclude 'node_modules' --exclude '.next' --exclude '.env' -e \"ssh -i /Users/yhm/claude/yhm-claude.pem\" /Users/yhm/claude/taskflow/ ec2-user@ec2-43-201-16-235.ap-northeast-2.compute.amazonaws.com:~/taskflow/)",
+      "Bash(ssh -i:*)",
+      "Bash(npx tsc --noEmit --pretty 2>&1 | head -30)",
+      "Bash(npx tsc --noEmit --pretty 2>&1 | tail -5)",
+      "Bash(mysql -h 127.0.0.1 -P 3307 -u admin -padmin_password -e \"SELECT id, name, color FROM claude.Category;\" 2>&1)",
+      "Bash(curl -s http://localhost:3000/api/categories 2>&1 | head -50)",
+      "Bash(lsof -i :3307 2>&1 | head -5)",
+      "Bash(lsof -i :3000 2>&1 | head -5)",
+      "Bash(curl -s http://localhost:3000/api/categories)",
+      "Bash(curl -sv http://localhost:3000/api/categories 2>&1)",
+      "Bash(git add . && git commit -m \"Add project files\")"
+    ]
+  }
+}

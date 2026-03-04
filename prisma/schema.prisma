@@ -1,0 +1,150 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String
+  color     String   @default("#3B82F6")
+  icon      String?
+  tasks     Task[]
+  memos     Memo[]
+  events    Event[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Task {
+  id          String     @id @default(cuid())
+  title       String
+  description String?    @db.Text
+  status      String     @default("todo") // todo, in_progress, done
+  priority    String     @default("medium") // low, medium, high, urgent
+  dueDate     DateTime?
+  category    Category   @relation(fields: [categoryId], references: [id])
+  categoryId  String
+  schedules   Schedule[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([categoryId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+model Memo {
+  id         String   @id @default(cuid())
+  title      String
+  content    String   @db.Text
+  tags       String? // comma-separated tags
+  category   Category @relation(fields: [categoryId], references: [id])
+  categoryId String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([categoryId])
+}
+
+model Event {
+  id          String    @id @default(cuid())
+  title       String
+  description String?   @db.Text
+  location    String?
+  startTime   DateTime
+  endTime     DateTime
+  allDay      Boolean   @default(false)
+  color       String?
+  type        String    @default("event") // event, focus_time, meeting, reminder
+  category    Category? @relation(fields: [categoryId], references: [id])
+  categoryId  String?
+  isRecurring Boolean   @default(false)
+  recurrence  String?   // cron expression for recurring events
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([startTime, endTime])
+  @@index([categoryId])
+  @@index([type])
+}
+
+model Schedule {
+  id           String   @id @default(cuid())
+  name         String
+  cronExpr     String // cron expression e.g. "0 9 * * *"
+  type         String // slack_notify, doc_generate, reminder, focus_time
+  targetId     String?
+  targetType   String? // task, memo, event
+  slackChannel String?
+  message      String?  @db.Text
+  isActive     Boolean  @default(true)
+  task         Task?    @relation(fields: [taskId], references: [id])
+  taskId       String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([isActive])
+}
+
+model Document {
+  id         String   @id @default(cuid())
+  title      String
+  content    String   @db.LongText
+  sourceType String // daily_summary, weekly_report, category_report
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model MeetingSlot {
+  id          String   @id @default(cuid())
+  title       String
+  description String?  @db.Text
+  duration    Int      @default(30) // minutes
+  slots       String   @db.LongText // JSON array of available time slots
+  bookingLink String   @unique @default(cuid())
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model MeetingBooking {
+  id            String   @id @default(cuid())
+  meetingSlotId String
+  bookerName    String
+  bookerEmail   String
+  startTime     DateTime
+  endTime       DateTime
+  status        String   @default("confirmed") // confirmed, cancelled
+  createdAt     DateTime @default(now())
+
+  @@index([meetingSlotId])
+}
+
+model SlackConfig {
+  id             String  @id @default(cuid())
+  botToken       String  @db.Text
+  defaultChannel String
+  isActive       Boolean @default(true)
+}
+
+model NotificationSetting {
+  id              String  @id @default(cuid())
+  type            String // before_event, daily_summary, task_due
+  minutesBefore   Int     @default(30)
+  slackChannel    String?
+  isActive        Boolean @default(true)
+  cronExpr        String? // for recurring notifications
+}
+
+model FocusTimeSetting {
+  id              String  @id @default(cuid())
+  minDuration     Int     @default(60) // minimum focus block in minutes
+  preferredStart  String  @default("09:00")
+  preferredEnd    String  @default("18:00")
+  excludeWeekends Boolean @default(true)
+  isActive        Boolean @default(true)
+}
