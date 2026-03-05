@@ -1,7 +1,7 @@
 #!/bin/bash
 
 PEM=~/claude/yhm-claude.pem
-EC2=ec2-user@ec2-43-201-16-235.ap-northeast-2.compute.amazonaws.com
+EC2=ec2-user@3.38.102.144
 RDS=claude.cd4coiukc9v8.ap-northeast-2.rds.amazonaws.com
 
 echo "SSH 터널 열기..."
