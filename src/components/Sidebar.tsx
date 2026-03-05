@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 
 const navItems = [
   { href: "/", label: "대시보드", icon: LayoutDashboard },
+  { href: "/chat", label: "AI 비서", icon: Bot },
   { href: "/tasks", label: "할 일", icon: CheckSquare },
   { href: "/memos", label: "메모", icon: StickyNote },
   { href: "/calendar", label: "캘린더", icon: Calendar },

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { parseNaturalLanguage } from "@/lib/natural-language";
+import { parseNaturalLanguage, parseImageEvent } from "@/lib/natural-language";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -24,6 +24,35 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
+
+  // Image input support
+  if (body.imageBase64) {
+    try {
+      const events = await parseImageEvent(body.imageBase64, body.mimeType || "image/jpeg");
+      if (!events.length) {
+        return NextResponse.json({ error: "이미지에서 일정을 찾을 수 없습니다." }, { status: 400 });
+      }
+      const created = await Promise.all(
+        events.map((e) =>
+          prisma.event.create({
+            data: {
+              title: e.title,
+              startTime: e.startTime,
+              endTime: e.endTime,
+              location: e.location,
+              allDay: e.allDay,
+              type: "event",
+              categoryId: body.categoryId,
+            },
+          })
+        )
+      );
+      return NextResponse.json(created, { status: 201 });
+    } catch (error) {
+      console.error("[imageEvent] error:", error);
+      return NextResponse.json({ error: "이미지 파싱에 실패했습니다." }, { status: 500 });
+    }
+  }
 
   // Natural language input support
   if (body.naturalLanguage) {

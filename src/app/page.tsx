@@ -18,8 +18,10 @@ import {
   Loader2,
   AlertCircle,
   ChevronRight,
+  ImagePlus,
 } from "lucide-react";
 import Link from "next/link";
+import { useRef } from "react";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -84,6 +86,8 @@ interface Memo {
 export default function DashboardPage() {
   const [eventInput, setEventInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: tasks = [] } = useSWR<Task[]>("/api/tasks", fetcher);
   const { data: events = [] } = useSWR<Event[]>("/api/events", fetcher);
@@ -153,6 +157,41 @@ export default function DashboardPage() {
     }
   };
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingImage(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64 = (reader.result as string).split(",")[1];
+        const res = await fetch("/api/events", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ imageBase64: base64, mimeType: file.type }),
+        });
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          toast.error(data.error || "이미지 파싱에 실패했습니다.");
+        } else {
+          const created = await res.json();
+          const count = Array.isArray(created) ? created.length : 1;
+          toast.success(`${count}개의 일정이 추가되었습니다`);
+          mutate("/api/events");
+        }
+        setIsUploadingImage(false);
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      toast.error("이미지 업로드에 실패했습니다.");
+      setIsUploadingImage(false);
+    }
+    // reset input
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
   const stats = [
     {
       label: "전체 할 일",
@@ -206,6 +245,27 @@ export default function DashboardPage() {
               onChange={(e) => setEventInput(e.target.value)}
               className="flex-1"
             />
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={handleImageUpload}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isUploadingImage}
+              onClick={() => fileInputRef.current?.click()}
+              title="이미지로 일정 추가"
+            >
+              {isUploadingImage ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <ImagePlus className="h-4 w-4" />
+              )}
+            </Button>
             <Button type="submit" disabled={isSubmitting || !eventInput.trim()}>
               {isSubmitting ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
