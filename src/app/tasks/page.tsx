@@ -94,6 +94,7 @@ interface Task {
 const defaultForm = {
   title: "",
   description: "",
+  status: "todo",
   priority: "medium",
   dueDate: "",
   categoryId: "",
@@ -138,6 +139,7 @@ export default function TasksPage() {
     setForm({
       title: task.title,
       description: task.description || "",
+      status: task.status,
       priority: task.priority,
       dueDate: task.dueDate
         ? format(new Date(task.dueDate), "yyyy-MM-dd")
@@ -169,10 +171,10 @@ export default function TasksPage() {
         ...(editingTask ? { id: editingTask.id } : {}),
         title: form.title,
         description: form.description || undefined,
+        status: form.status,
         priority: form.priority,
         dueDate: form.dueDate || undefined,
         categoryId: form.categoryId,
-        ...(editingTask ? { status: editingTask.status } : {}),
       };
 
       const res = await fetch("/api/tasks", {
@@ -475,7 +477,26 @@ export default function TasksPage() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>상태</Label>
+                <Select
+                  value={form.status}
+                  onValueChange={(v) =>
+                    setForm((f) => ({ ...f, status: v }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todo">대기</SelectItem>
+                    <SelectItem value="in_progress">진행중</SelectItem>
+                    <SelectItem value="done">완료</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="space-y-2">
                 <Label>우선순위</Label>
                 <Select

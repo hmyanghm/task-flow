@@ -65,7 +65,7 @@ import type { CalendarEvent, Category } from "@/types";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-const HOURS = Array.from({ length: 15 }, (_, i) => i + 7); // 7am to 9pm
+const HOURS = Array.from({ length: 24 }, (_, i) => i); // 0am to 11pm
 const DAY_NAMES = ["일", "월", "화", "수", "목", "금", "토"];
 
 const EVENT_COLORS: Record<string, { bg: string; border: string; text: string; dot: string }> = {
@@ -337,15 +337,14 @@ export default function CalendarPage() {
     const end = parseISO(event.endTime);
     const startHour = start.getHours() + start.getMinutes() / 60;
     const durationMinutes = differenceInMinutes(end, start);
-    const topOffset = (startHour - 7) * 64; // 64px per hour
+    const topOffset = startHour * 64; // 64px per hour
     const height = Math.max((durationMinutes / 60) * 64, 24);
     return { top: `${topOffset}px`, height: `${height}px` };
   }, []);
 
   const getCurrentTimePosition = useCallback(() => {
     const hours = currentTime.getHours() + currentTime.getMinutes() / 60;
-    if (hours < 7 || hours > 21) return null;
-    return (hours - 7) * 64;
+    return hours * 64;
   }, [currentTime]);
 
   const currentTimePos = getCurrentTimePosition();

@@ -132,8 +132,15 @@ export default function DashboardPage() {
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "일정 생성 실패");
+        let errorMessage = "일정 생성 실패";
+        try {
+          const data = await res.json();
+          errorMessage = data.error || errorMessage;
+        } catch {
+          // 응답 본문이 JSON이 아닌 경우 (DB 연결 오류 등)
+          if (res.status === 500) errorMessage = "서버 오류가 발생했습니다. DB 연결을 확인해주세요.";
+        }
+        throw new Error(errorMessage);
       }
 
       toast.success("일정이 추가되었습니다");

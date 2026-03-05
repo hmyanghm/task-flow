@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
 
   // Natural language input support
   if (body.naturalLanguage) {
-    const parsed = parseNaturalLanguage(body.naturalLanguage);
+    const parsed = await parseNaturalLanguage(body.naturalLanguage);
     if (!parsed) {
       return NextResponse.json(
         { error: "일정을 파싱할 수 없습니다. 예: '내일 오후 2시 팀 미팅'" },
