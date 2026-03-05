@@ -199,6 +199,7 @@ export default function DashboardPage() {
       icon: CheckSquare,
       color: "text-blue-600",
       bg: "bg-blue-50",
+      href: "/tasks",
     },
     {
       label: "진행중",
@@ -206,6 +207,7 @@ export default function DashboardPage() {
       icon: Clock,
       color: "text-amber-600",
       bg: "bg-amber-50",
+      href: "/tasks",
     },
     {
       label: "오늘 마감",
@@ -213,6 +215,7 @@ export default function DashboardPage() {
       icon: CalendarDays,
       color: "text-rose-600",
       bg: "bg-rose-50",
+      href: "/tasks",
     },
     {
       label: "전체 메모",
@@ -220,6 +223,7 @@ export default function DashboardPage() {
       icon: StickyNote,
       color: "text-emerald-600",
       bg: "bg-emerald-50",
+      href: "/memos",
     },
   ];
 
@@ -281,17 +285,19 @@ export default function DashboardPage() {
       {/* Stats Cards */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {stats.map((stat) => (
-          <Card key={stat.label}>
-            <CardContent className="flex items-center gap-4 pt-6">
-              <div className={`rounded-lg p-2.5 ${stat.bg}`}>
-                <stat.icon className={`h-5 w-5 ${stat.color}`} />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">{stat.label}</p>
-                <p className="text-2xl font-bold">{stat.value}</p>
-              </div>
-            </CardContent>
-          </Card>
+          <Link key={stat.label} href={stat.href}>
+            <Card className="transition-shadow hover:shadow-md cursor-pointer">
+              <CardContent className="flex items-center gap-4 pt-6">
+                <div className={`rounded-lg p-2.5 ${stat.bg}`}>
+                  <stat.icon className={`h-5 w-5 ${stat.color}`} />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">{stat.label}</p>
+                  <p className="text-2xl font-bold">{stat.value}</p>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
         ))}
       </div>
 
@@ -320,8 +326,9 @@ export default function DashboardPage() {
                   const isOverdue =
                     task.dueDate && isBefore(new Date(task.dueDate), todayStart);
                   return (
-                    <div
+                    <Link
                       key={task.id}
+                      href="/tasks"
                       className="flex items-start gap-3 rounded-lg border p-3 transition-colors hover:bg-accent/50"
                     >
                       <div className="flex-1 min-w-0">
@@ -363,7 +370,7 @@ export default function DashboardPage() {
                           )}
                         </div>
                       </div>
-                    </div>
+                    </Link>
                   );
                 })}
               </div>
@@ -391,8 +398,9 @@ export default function DashboardPage() {
             ) : (
               <div className="space-y-3">
                 {upcomingEvents.map((event) => (
-                  <div
+                  <Link
                     key={event.id}
+                    href="/calendar"
                     className="flex items-start gap-3 rounded-lg border p-3 transition-colors hover:bg-accent/50"
                   >
                     <div
@@ -425,7 +433,7 @@ export default function DashboardPage() {
                         )}
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}
@@ -453,9 +461,10 @@ export default function DashboardPage() {
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {recentMemos.map((memo) => (
-                <div
+                <Link
                   key={memo.id}
-                  className="rounded-lg border p-4 transition-colors hover:bg-accent/50"
+                  href="/memos"
+                  className="rounded-lg border p-4 transition-colors hover:bg-accent/50 block"
                 >
                   <h4 className="font-medium truncate">{memo.title}</h4>
                   <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
@@ -495,7 +504,7 @@ export default function DashboardPage() {
                       locale: ko,
                     })}
                   </p>
-                </div>
+                </Link>
               ))}
             </div>
           )}
