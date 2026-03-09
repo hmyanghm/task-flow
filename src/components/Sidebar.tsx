@@ -18,9 +18,11 @@ import {
   X,
   Sun,
   Moon,
+  LogOut,
 } from "lucide-react";
 import { useState } from "react";
 import { useTheme } from "next-themes";
+import { useSession, signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 
 const navItems = [
@@ -40,6 +42,7 @@ export function Sidebar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const { theme, setTheme } = useTheme();
+  const { data: session } = useSession();
 
   return (
     <>
@@ -98,6 +101,39 @@ export function Sidebar() {
         </nav>
 
         <div className="border-t p-3 space-y-3">
+          {session?.user && (
+            <div className="flex items-center gap-3 rounded-lg border p-3">
+              {session.user.image ? (
+                <img
+                  src={session.user.image}
+                  alt=""
+                  className="h-8 w-8 rounded-full"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
+                  {session.user.name?.charAt(0) || "U"}
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="truncate text-sm font-medium">
+                  {session.user.name}
+                </p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {session.user.email}
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 shrink-0"
+                onClick={() => signOut({ callbackUrl: "/login" })}
+                title="로그아웃"
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
           <Button
             variant="ghost"
             size="sm"
@@ -108,14 +144,6 @@ export function Sidebar() {
             <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-transform dark:rotate-0 dark:scale-100" />
             <span>{theme === "dark" ? "라이트 모드" : "다크 모드"}</span>
           </Button>
-          <div className="rounded-lg bg-muted p-3">
-            <p className="text-xs text-muted-foreground">
-              자연어로 일정을 추가해보세요
-            </p>
-            <p className="mt-1 text-xs font-medium">
-              &quot;내일 오후 2시 팀 미팅&quot;
-            </p>
-          </div>
         </div>
       </aside>
     </>

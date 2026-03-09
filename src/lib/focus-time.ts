@@ -14,9 +14,11 @@ interface TimeSlot {
   end: Date;
 }
 
-export async function generateFocusBlocks(date: Date): Promise<TimeSlot[]> {
+export async function generateFocusBlocks(date: Date, userId?: string): Promise<TimeSlot[]> {
+  const userFilter = userId ? { userId } : {};
+
   const settings = await prisma.focusTimeSetting.findFirst({
-    where: { isActive: true },
+    where: { isActive: true, ...userFilter },
   });
 
   if (!settings) return [];
@@ -32,6 +34,7 @@ export async function generateFocusBlocks(date: Date): Promise<TimeSlot[]> {
   // Get existing events for the day
   const events = await prisma.event.findMany({
     where: {
+      ...userFilter,
       startTime: { gte: startOfDay(date), lte: endOfDay(date) },
       type: { not: "focus_time" },
     },
@@ -69,13 +72,16 @@ export async function generateFocusBlocks(date: Date): Promise<TimeSlot[]> {
   return gaps;
 }
 
-export async function autoScheduleFocusTime(daysAhead: number = 5) {
+export async function autoScheduleFocusTime(daysAhead: number = 5, userId?: string) {
+  const userFilter = userId ? { userId } : {};
+
   // Remove existing auto-generated focus time blocks
   const now = new Date();
   const futureDate = addDays(now, daysAhead);
 
   await prisma.event.deleteMany({
     where: {
+      ...userFilter,
       type: "focus_time",
       startTime: { gte: now, lte: futureDate },
       description: { contains: "[auto]" },
@@ -86,7 +92,7 @@ export async function autoScheduleFocusTime(daysAhead: number = 5) {
 
   for (let i = 0; i < daysAhead; i++) {
     const date = addDays(now, i);
-    const gaps = await generateFocusBlocks(date);
+    const gaps = await generateFocusBlocks(date, userId);
 
     for (const gap of gaps) {
       await prisma.event.create({
@@ -97,6 +103,7 @@ export async function autoScheduleFocusTime(daysAhead: number = 5) {
           endTime: gap.end,
           type: "focus_time",
           color: "#10B981",
+          userId,
         },
       });
     }

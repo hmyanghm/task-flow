@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { addDays, setHours, setMinutes, startOfDay, isWeekend } from "date-fns";
+import { getAuthUserId } from "@/lib/auth-guard";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const bookingLink = searchParams.get("link");
 
+  // Public: lookup by booking link
   if (bookingLink) {
     const slot = await prisma.meetingSlot.findUnique({
       where: { bookingLink },
@@ -19,7 +21,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ...slot, availableSlots });
   }
 
+  // Auth required: list own slots
+  const userId = await getAuthUserId();
+  if (userId instanceof NextResponse) return userId;
+
   const slots = await prisma.meetingSlot.findMany({
+    where: { userId },
     orderBy: { createdAt: "desc" },
   });
   return NextResponse.json(slots);
@@ -28,7 +35,11 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const body = await req.json();
 
+  // Auth required: create slot
   if (body.action === "create_slot") {
+    const userId = await getAuthUserId();
+    if (userId instanceof NextResponse) return userId;
+
     const slot = await prisma.meetingSlot.create({
       data: {
         title: body.title,
@@ -36,11 +47,13 @@ export async function POST(req: NextRequest) {
         duration: body.duration || 30,
         slots: JSON.stringify(body.slots || []),
         isActive: true,
+        userId,
       },
     });
     return NextResponse.json(slot, { status: 201 });
   }
 
+  // Public: book a slot
   if (body.action === "book") {
     const slot = await prisma.meetingSlot.findUnique({
       where: { bookingLink: body.bookingLink },
@@ -89,6 +102,7 @@ export async function POST(req: NextRequest) {
           endTime,
           type: "meeting",
           color: "#8B5CF6",
+          userId: slot.userId,
         },
       }),
     ]);
@@ -127,10 +141,9 @@ async function generateAvailableSlots(duration: number) {
       );
 
       if (!hasConflict) {
-        // Score: prefer mid-morning and mid-afternoon
         const hour = current.getHours();
         let score = 50;
-        if (hour === 10 || hour === 14) score = 100; // BEST
+        if (hour === 10 || hour === 14) score = 100;
         else if (hour === 11 || hour === 15) score = 80;
         else if (hour === 9 || hour === 16) score = 60;
 

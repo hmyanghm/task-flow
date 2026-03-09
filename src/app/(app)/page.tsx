@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import useSWR, { mutate } from "swr";
+import { useSession } from "next-auth/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -84,6 +85,7 @@ interface Memo {
 }
 
 export default function DashboardPage() {
+  const { data: session } = useSession();
   const [eventInput, setEventInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
@@ -232,7 +234,7 @@ export default function DashboardPage() {
       {/* Welcome Header */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
-          안녕하세요! 오늘도 화이팅
+          안녕하세요{session?.user?.name ? `, ${session.user.name}` : ""}님!
         </h1>
         <p className="mt-1 text-muted-foreground">
           {format(today, "yyyy년 M월 d일 EEEE", { locale: ko })}

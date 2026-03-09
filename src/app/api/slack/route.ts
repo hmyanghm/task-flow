@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendSlackMessage, resetSlackClient } from "@/lib/slack";
+import { getAuthUserId } from "@/lib/auth-guard";
 
 export async function GET() {
-  const config = await prisma.slackConfig.findFirst();
+  const userId = await getAuthUserId();
+  if (userId instanceof NextResponse) return userId;
+
+  const config = await prisma.slackConfig.findFirst({
+    where: { userId },
+  });
   if (!config) {
     return NextResponse.json({
       configured: false,
@@ -18,6 +24,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const userId = await getAuthUserId();
+  if (userId instanceof NextResponse) return userId;
+
   const body = await req.json();
 
   if (body.action === "test") {
@@ -29,7 +38,9 @@ export async function POST(req: NextRequest) {
   }
 
   if (body.action === "configure") {
-    const existing = await prisma.slackConfig.findFirst();
+    const existing = await prisma.slackConfig.findFirst({
+      where: { userId },
+    });
     if (existing) {
       await prisma.slackConfig.update({
         where: { id: existing.id },
@@ -45,6 +56,7 @@ export async function POST(req: NextRequest) {
           botToken: body.botToken,
           defaultChannel: body.defaultChannel,
           isActive: true,
+          userId,
         },
       });
     }

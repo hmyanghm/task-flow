@@ -4,7 +4,8 @@ import { ko } from "date-fns/locale";
 
 export async function generateDocument(
   sourceType: string,
-  dateRange?: { start: Date; end: Date }
+  dateRange?: { start: Date; end: Date },
+  userId?: string
 ) {
   const now = new Date();
   let start: Date;
@@ -33,9 +34,12 @@ export async function generateDocument(
       title = `요약 - ${format(now, "yyyy년 MM월 dd일", { locale: ko })}`;
   }
 
+  const userFilter = userId ? { userId } : {};
+
   const [tasks, memos, events] = await Promise.all([
     prisma.task.findMany({
       where: {
+        ...userFilter,
         OR: [
           { createdAt: { gte: start, lte: end } },
           { updatedAt: { gte: start, lte: end } },
@@ -45,12 +49,12 @@ export async function generateDocument(
       orderBy: { updatedAt: "desc" },
     }),
     prisma.memo.findMany({
-      where: { createdAt: { gte: start, lte: end } },
+      where: { ...userFilter, createdAt: { gte: start, lte: end } },
       include: { category: true },
       orderBy: { createdAt: "desc" },
     }),
     prisma.event.findMany({
-      where: { startTime: { gte: start, lte: end } },
+      where: { ...userFilter, startTime: { gte: start, lte: end } },
       orderBy: { startTime: "asc" },
     }),
   ]);
@@ -118,6 +122,7 @@ export async function generateDocument(
   // Category breakdown
   if (sourceType === "category_report" || sourceType === "weekly_report") {
     const categories = await prisma.category.findMany({
+      where: userFilter,
       include: {
         tasks: {
           where: { updatedAt: { gte: start, lte: end } },
@@ -138,7 +143,7 @@ export async function generateDocument(
   }
 
   const doc = await prisma.document.create({
-    data: { title, content, sourceType },
+    data: { title, content, sourceType, userId },
   });
 
   return doc;

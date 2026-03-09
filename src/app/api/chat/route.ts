@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { prisma } from "@/lib/prisma";
+import { getAuthUserId } from "@/lib/auth-guard";
 
 const client = new Anthropic();
 
@@ -61,10 +62,11 @@ const tools: Anthropic.Tool[] = [
   },
 ];
 
-async function executeTool(name: string, input: Record<string, unknown>) {
+async function executeTool(name: string, input: Record<string, unknown>, userId: string) {
   if (name === "get_events") {
     const events = await prisma.event.findMany({
       where: {
+        userId,
         startTime: { gte: new Date(input.startDate as string) },
         endTime: { lte: new Date(input.endDate as string) },
       },
@@ -77,6 +79,7 @@ async function executeTool(name: string, input: Record<string, unknown>) {
   if (name === "check_conflicts") {
     const conflicts = await prisma.event.findMany({
       where: {
+        userId,
         OR: [
           {
             startTime: { lt: new Date(input.endTime as string) },
@@ -98,16 +101,17 @@ async function executeTool(name: string, input: Record<string, unknown>) {
         location: input.location as string | undefined,
         allDay: (input.allDay as boolean) || false,
         type: "event",
+        userId,
       },
     });
     return JSON.stringify(event);
   }
 
   if (name === "get_tasks") {
-    const where =
-      input.status && input.status !== "all"
-        ? { status: input.status as string }
-        : {};
+    const where: Record<string, unknown> = { userId };
+    if (input.status && input.status !== "all") {
+      where.status = input.status as string;
+    }
     const tasks = await prisma.task.findMany({
       where,
       include: { category: true },
@@ -120,6 +124,9 @@ async function executeTool(name: string, input: Record<string, unknown>) {
 }
 
 export async function POST(req: NextRequest) {
+  const userId = await getAuthUserId();
+  if (userId instanceof NextResponse) return userId;
+
   const { messages } = await req.json();
 
   const kstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
@@ -171,7 +178,8 @@ export async function POST(req: NextRequest) {
           if (block.type !== "tool_use") return null!;
           const result = await executeTool(
             block.name,
-            block.input as Record<string, unknown>
+            block.input as Record<string, unknown>,
+            userId
           );
           return {
             type: "tool_result" as const,

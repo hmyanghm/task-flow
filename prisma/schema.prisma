@@ -7,16 +7,84 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// NextAuth models
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+
+  categories           Category[]
+  tasks                Task[]
+  memos                Memo[]
+  events               Event[]
+  schedules            Schedule[]
+  documents            Document[]
+  meetingSlots         MeetingSlot[]
+  meetingBookings      MeetingBooking[]
+  slackConfigs         SlackConfig[]
+  notificationSettings NotificationSetting[]
+  focusTimeSettings    FocusTimeSetting[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// App models
 model Category {
   id        String   @id @default(cuid())
   name      String
   color     String   @default("#3B82F6")
   icon      String?
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   tasks     Task[]
   memos     Memo[]
   events    Event[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model Task {
@@ -28,6 +96,8 @@ model Task {
   dueDate     DateTime?
   category    Category   @relation(fields: [categoryId], references: [id])
   categoryId  String
+  userId      String?
+  user        User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
   schedules   Schedule[]
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
@@ -35,6 +105,7 @@ model Task {
   @@index([categoryId])
   @@index([status])
   @@index([dueDate])
+  @@index([userId])
 }
 
 model Memo {
@@ -44,10 +115,13 @@ model Memo {
   tags       String? // comma-separated tags
   category   Category @relation(fields: [categoryId], references: [id])
   categoryId String
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
   @@index([categoryId])
+  @@index([userId])
 }
 
 model Event {
@@ -64,12 +138,15 @@ model Event {
   categoryId  String?
   isRecurring Boolean   @default(false)
   recurrence  String?   // cron expression for recurring events
+  userId      String?
+  user        User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
   @@index([startTime, endTime])
   @@index([categoryId])
   @@index([type])
+  @@index([userId])
 }
 
 model Schedule {
@@ -84,10 +161,13 @@ model Schedule {
   isActive     Boolean  @default(true)
   task         Task?    @relation(fields: [taskId], references: [id])
   taskId       String?
+  userId       String?
+  user         User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   @@index([isActive])
+  @@index([userId])
 }
 
 model Document {
@@ -95,8 +175,12 @@ model Document {
   title      String
   content    String   @db.LongText
   sourceType String // daily_summary, weekly_report, category_report
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model MeetingSlot {
@@ -107,8 +191,12 @@ model MeetingSlot {
   slots       String   @db.LongText // JSON array of available time slots
   bookingLink String   @unique @default(cuid())
   isActive    Boolean  @default(true)
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model MeetingBooking {
@@ -119,9 +207,12 @@ model MeetingBooking {
   startTime     DateTime
   endTime       DateTime
   status        String   @default("confirmed") // confirmed, cancelled
+  userId        String?
+  user          User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt     DateTime @default(now())
 
   @@index([meetingSlotId])
+  @@index([userId])
 }
 
 model SlackConfig {
@@ -129,6 +220,10 @@ model SlackConfig {
   botToken       String  @db.Text
   defaultChannel String
   isActive       Boolean @default(true)
+  userId         String?
+  user           User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model NotificationSetting {
@@ -138,6 +233,10 @@ model NotificationSetting {
   slackChannel    String?
   isActive        Boolean @default(true)
   cronExpr        String? // for recurring notifications
+  userId          String?
+  user            User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model FocusTimeSetting {
@@ -147,4 +246,8 @@ model FocusTimeSetting {
   preferredEnd    String  @default("18:00")
   excludeWeekends Boolean @default(true)
   isActive        Boolean @default(true)
+  userId          String?
+  user            User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

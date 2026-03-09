@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getAuthUserId } from "@/lib/auth-guard";
 
 export async function GET(req: NextRequest) {
+  const userId = await getAuthUserId();
+  if (userId instanceof NextResponse) return userId;
+
   const { searchParams } = new URL(req.url);
   const categoryId = searchParams.get("categoryId");
   const search = searchParams.get("search");
   const tag = searchParams.get("tag");
 
-  const where: Record<string, unknown> = {};
+  const where: Record<string, unknown> = { userId };
   if (categoryId) where.categoryId = categoryId;
   if (search) {
     where.OR = [
@@ -28,6 +32,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const userId = await getAuthUserId();
+  if (userId instanceof NextResponse) return userId;
+
   const body = await req.json();
   const memo = await prisma.memo.create({
     data: {
@@ -35,6 +42,7 @@ export async function POST(req: NextRequest) {
       content: body.content,
       tags: body.tags,
       categoryId: body.categoryId,
+      userId,
     },
     include: { category: true },
   });
@@ -42,9 +50,12 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
+  const userId = await getAuthUserId();
+  if (userId instanceof NextResponse) return userId;
+
   const body = await req.json();
   const memo = await prisma.memo.update({
-    where: { id: body.id },
+    where: { id: body.id, userId },
     data: {
       title: body.title,
       content: body.content,
@@ -57,10 +68,13 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const userId = await getAuthUserId();
+  if (userId instanceof NextResponse) return userId;
+
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "ID required" }, { status: 400 });
 
-  await prisma.memo.delete({ where: { id } });
+  await prisma.memo.delete({ where: { id, userId } });
   return NextResponse.json({ success: true });
 }

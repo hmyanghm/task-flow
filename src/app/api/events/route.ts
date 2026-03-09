@@ -1,14 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { parseNaturalLanguage, parseImageEvent } from "@/lib/natural-language";
+import { getAuthUserId } from "@/lib/auth-guard";
 
 export async function GET(req: NextRequest) {
+  const userId = await getAuthUserId();
+  if (userId instanceof NextResponse) return userId;
+
   const { searchParams } = new URL(req.url);
   const start = searchParams.get("start");
   const end = searchParams.get("end");
   const type = searchParams.get("type");
 
-  const where: Record<string, unknown> = {};
+  const where: Record<string, unknown> = { userId };
   if (start && end) {
     where.startTime = { gte: new Date(start), lte: new Date(end) };
   }
@@ -23,6 +27,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const userId = await getAuthUserId();
+  if (userId instanceof NextResponse) return userId;
+
   const body = await req.json();
 
   // Image input support
@@ -43,6 +50,7 @@ export async function POST(req: NextRequest) {
               allDay: e.allDay,
               type: "event",
               categoryId: body.categoryId,
+              userId,
             },
           })
         )
@@ -72,6 +80,7 @@ export async function POST(req: NextRequest) {
         allDay: parsed.allDay,
         type: "event",
         categoryId: body.categoryId,
+        userId,
       },
     });
     return NextResponse.json(event, { status: 201 });
@@ -90,15 +99,19 @@ export async function POST(req: NextRequest) {
       categoryId: body.categoryId,
       isRecurring: body.isRecurring || false,
       recurrence: body.recurrence,
+      userId,
     },
   });
   return NextResponse.json(event, { status: 201 });
 }
 
 export async function PUT(req: NextRequest) {
+  const userId = await getAuthUserId();
+  if (userId instanceof NextResponse) return userId;
+
   const body = await req.json();
   const event = await prisma.event.update({
-    where: { id: body.id },
+    where: { id: body.id, userId },
     data: {
       title: body.title,
       description: body.description,
@@ -115,10 +128,13 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const userId = await getAuthUserId();
+  if (userId instanceof NextResponse) return userId;
+
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "ID required" }, { status: 400 });
 
-  await prisma.event.delete({ where: { id } });
+  await prisma.event.delete({ where: { id, userId } });
   return NextResponse.json({ success: true });
 }
