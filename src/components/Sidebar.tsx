@@ -142,7 +142,9 @@ export function Sidebar() {
           >
             <Sun className="h-4 w-4 rotate-0 scale-100 transition-transform dark:-rotate-90 dark:scale-0" />
             <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-transform dark:rotate-0 dark:scale-100" />
-            <span>{theme === "dark" ? "라이트 모드" : "다크 모드"}</span>
+            <span suppressHydrationWarning>
+              {theme === "dark" ? "라이트 모드" : "다크 모드"}
+            </span>
           </Button>
         </div>
       </aside>

@@ -24,7 +24,11 @@ import {
 import Link from "next/link";
 import { useRef } from "react";
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+const fetcher = (url: string) =>
+  fetch(url).then((r) => {
+    if (!r.ok) throw new Error(r.statusText);
+    return r.json();
+  });
 
 const priorityColors: Record<string, string> = {
   urgent: "bg-red-100 text-red-700 border-red-200",
